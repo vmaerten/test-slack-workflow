@@ -3,7 +3,7 @@
 Github actions to initialize various environments.
 
 ## How to release
-### Automatically (recommended)
+### Automatically (recommended)   
 
 #### By CLI
 With gh cli, you can run `gh workflow run` then you will be prompted to fill the inputs.
