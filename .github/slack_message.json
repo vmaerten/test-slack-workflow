@@ -1,4 +1,5 @@
 {
+  "channel": "CHUC23F16",
   "text": "New version of Actions (${{env.VERSION_NUMBER}}) is available",
   "blocks": [
     {
@@ -21,7 +22,7 @@
       "text": {
         "type": "mrkdwn",
         "text": ${{ env.CHANGELOG}}
-      }
-    }
+  }
+  }
   ]
 }
