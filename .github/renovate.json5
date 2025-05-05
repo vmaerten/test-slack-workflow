@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "local>pbstck/renovate-config:base.json5"
+  ],
+  customManagers: [
+    {
+      customType: 'regex',
+      fileMatch: [
+        '^setup-rust/action.yml$'
+      ],
+      matchStrings: [
+        'TARPAULIN_VERSION: (?<currentValue>\\d+\\.\\d+(\\.\\d+)?).*'
+      ],
+      depNameTemplate: "cargo-tarpaulin",
+      depTypeTemplate: "deps",
+      packageNameTemplate: 'xd009642/tarpaulin',
+      datasourceTemplate: 'github-releases'
+    }
+  ],
+  packageRules: [
+    {
+      matchManagers: [
+        'custom.regex',
+      ],
+      matchDepNames: [
+        'cargo-tarpaulin',
+      ],
+      "groupName": "cargo-tarpaulin",
+      schedule: ["at any time"],
+    }
+  ]
+}

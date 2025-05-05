@@ -1,0 +1,12 @@
+name: 'Create Repository'
+description: 'Create repo compliant with team usage'
+inputs:
+  name:  # id of input
+    description: 'Name of the repo'
+    required: true
+  description: # id of input
+    description: 'Description of the repo'
+    required: false
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

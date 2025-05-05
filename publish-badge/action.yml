@@ -1,0 +1,38 @@
+name: Publish badge
+description: Publish svg badge on branch coverage
+inputs:
+  badge-svg:
+    description: 'A string that represent the badge in SVG format'
+    required: true
+  badge-name:
+    description: 'Name of saved badge'
+    required: true
+  badge-json:
+    description: 'A string that represent a JSON version of badge'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout coverage branch
+      uses: actions/checkout@v4
+      with:
+        show-progress: false
+        ref: coverage
+    - name: Save SVG badge
+      run: echo '${{ inputs.badge-svg }}' > badges/${{ inputs.badge-name }}.svg
+      shell: bash
+    - name: Save JSON badge
+      run: echo '${{ inputs.badge-json }}' > ${{ inputs.badge-name }}.json
+      shell: bash
+    - name: Commit badge
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "Update badges [skip ci]"
+        skip_fetch: true
+        skip_checkout: true
+    - name: Checkout Back
+      uses: actions/checkout@v4
+      with:
+        show-progress: false
+        ref: ${{ github.ref }}

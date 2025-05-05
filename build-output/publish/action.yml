@@ -1,0 +1,29 @@
+name: Publish json
+description: Publish files.json on build-output branch
+inputs:
+  comments:
+    description: 'One line per file that need to be analyzed in the form <key>'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout build-output branch
+      uses: actions/checkout@v4
+      with:
+        show-progress: false
+        ref: build-output
+    - uses: pbstck/actions/build-output/write@v1
+      with:
+        output-comment:  ${{inputs.comments}}
+    - name: Commit information
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "Update files information [skip ci]"
+        skip_fetch: true
+        skip_checkout: true
+    - name: Checkout Back
+      uses: actions/checkout@v4
+      with:
+        show-progress: false
+        ref: ${{ github.ref }}

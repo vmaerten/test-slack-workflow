@@ -1,0 +1,9 @@
+name: 'Write badges'
+description: 'Write badges (svg / json) for one job'
+inputs:
+  output-coverage: # id of input
+    description: 'Output from comment-coverage'
+    required: false
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

@@ -1,0 +1,52 @@
+name: Setup Rust with cache
+description: Install Rust with the desired version and cache
+inputs:
+  rust-version:
+    description: 'version'
+    required: false
+  working-directory:
+    description: "The working directory this action should operate in"
+    required: false
+  tarpaulin-version:
+    description: "Cargo Tarpaulin version"
+    required: false
+    default: "0.24.0"
+  private-pull:
+    description: "Allow private pull"
+    required: false
+    default: "false"
+  key:
+    description: "Additional key to the cache key"
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: "Setup SSH Agent"
+      if: ${{ inputs.private-pull == 'true' }}
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: |
+          ${{ env.MODELS_SECRET_KEY }}
+          ${{ env.AWS_LIB_SECRET_KEY }}
+          ${{ env.MONGODB_TOOLING_SECRET_KEY }}
+    - name: Install Rust toolchain
+      shell: bash
+      env:
+        CURRENT_RUST_VERSION: ${{ inputs.rust-version || env.RUST_VERSION || '1.67.1' }}
+      run: |
+        rustup show
+        rustup -V
+        rustup toolchain install ${CURRENT_RUST_VERSION} --component clippy --component rustfmt
+        rustup override set ${CURRENT_RUST_VERSION}
+        rustup target add --toolchain ${CURRENT_RUST_VERSION} x86_64-unknown-linux-gnu
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: ${{ inputs.working-directory || env.WORKING_DIRECTORY || '.' }} -> ./target
+        key: ${{ inputs.key }}
+    - name: Install cargo-tarpaulin
+      uses: taiki-e/install-action@v2
+      env:
+        TARPAULIN_VERSION: 0.31.3
+      with:
+        tool: cargo-tarpaulin@${{ env.TARPAULIN_VERSION }}

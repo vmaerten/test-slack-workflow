@@ -1,0 +1,35 @@
+name: Yarn cache action
+description: Install yarn with the desired version and cache its directory
+inputs:
+  node-version:
+    description: 'version'
+    required: false
+  private-pull:
+    description: "Allow private pull"
+    required: false
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version || env.NODE_VERSION || '18.x' }}
+    - run: npm install -g yarn
+      shell: bash
+    - name: Get yarn cache directory path
+      id: yarn-cache-dir-path
+      shell: bash
+      run: echo "dir=$([[ $(yarn -v) =~ ^1.* ]] && yarn cache dir || yarn config get cacheFolder)" >> $GITHUB_OUTPUT
+    - uses: actions/cache@v4
+      id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+      with:
+        path: |
+          ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          .yarn
+          node_modules
+          frontend/*/node_modules
+          */node_modules
+          code/*/node_modules
+        key: ${{ runner.os }}-yarn-${{ inputs.node-version }}-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+            ${{ runner.os }}-yarn-${{ inputs.node-version }}-${{ hashFiles('**/yarn.lock') }}

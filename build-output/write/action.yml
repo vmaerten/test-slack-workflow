@@ -1,0 +1,9 @@
+name: 'Write files.json'
+description: 'Write files.json'
+inputs:
+  output-comment: # id of input
+    description: 'Output from comment'
+    required: false
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

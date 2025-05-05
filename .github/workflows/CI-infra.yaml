@@ -1,0 +1,43 @@
+name: Continuous integration
+on:
+  workflow_call:
+    inputs:
+      override_env:
+        required: false
+        type: string
+env:
+  WORKING_DIRECTORY: "code/rust"
+  AWS_DEFAULT_REGION: "eu-west-1"
+  AWS_GH_ACTION_ROLE: ${{ vars.TOOL_GH_ACTION_ROLE_ARN }}
+  CICD_ARTIFACTORY_KEY: ${{ secrets.CICD_ARTIFACTORY_KEY }}
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+  MODELS_SECRET_KEY: ${{ secrets.MODELS_SECRET_KEY }}
+  AWS_LIB_SECRET_KEY: ${{ secrets.AWS_LIB_SECRET_KEY }}
+  MONGODB_TOOLING_SECRET_KEY: ${{ secrets.MONGODB_TOOLING_SECRET_KEY }}
+  TERRAFORM_MODULES_SECRET_KEY: ${{ secrets.TERRAFORM_MODULES_SECRET_KEY }}
+  CF_TOKEN: ${{ secrets.CF_TOKEN }}
+  CF_MAIL: ${{ secrets.CF_MAIL }}
+  RUST_VERSION: '1.72.1'
+permissions:
+  id-token: write # required to use OIDC authentication
+  contents: write # read is required for actions/checkout, write is required for pbstck/actions/coverage to be able to write comments on commits (on main)
+  pull-requests: write # write is required to let pbstck/actions/coverage write comments on PR
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Task
+        uses: pbstck/actions/setup-task@v1
+      - uses: pbstck/actions/setup-terraform@v1
+      - uses: pbstck/actions/setup-cloud@v1
+      - run: task -y artifacts/mock
+      - run: STAGE=${{ inputs.override_env || 'dev' }} task infra:terraform/plan
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Task
+        uses: pbstck/actions/setup-task@v1
+      - uses: pbstck/actions/setup-terraform@v1
+      - run: task -y infra:lint/check

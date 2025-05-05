@@ -1,0 +1,29 @@
+name: Publish badges
+description: Publish all svg badge on branch coverage
+inputs:
+  summaries:
+    description: 'One line per file that need to be analyzed in the form <key>'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout coverage branch
+      uses: actions/checkout@v4
+      with:
+        show-progress: false
+        ref: coverage
+    - uses: pbstck/actions/write-badges@v1
+      with:
+        output-coverage:  ${{inputs.summaries}}
+    - name: Commit badge
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "Update badges [skip ci]"
+        skip_fetch: true
+        skip_checkout: true
+    - name: Checkout Back
+      uses: actions/checkout@v4
+      with:
+        show-progress: false
+        ref: ${{ github.ref }}

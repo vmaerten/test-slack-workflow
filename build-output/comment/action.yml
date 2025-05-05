@@ -1,0 +1,14 @@
+name: Check files sizes
+description: This action compresses the files provided and reports their sizes, posting a comment in a readable format.
+inputs:
+  github-token:
+    description: 'GitHub API Access Token'
+    default: ${{ github.token }}
+    required: true
+  files:
+    description: 'One line per file that needs to be analyzed in the form <baseDir>@<regex> (regex is optional and shall match only one file)'
+    required: true
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

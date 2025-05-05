@@ -1,0 +1,101 @@
+name: Continuous deployment
+on:
+  workflow_call:
+    inputs:
+      override_env:
+        required: false
+        type: string
+env:
+  AWS_DEFAULT_REGION: "eu-west-1"
+  AWS_REGION: "eu-west-1"
+  CICD_ARTIFACTORY_KEY: ${{ secrets.CICD_ARTIFACTORY_KEY }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  CF_TOKEN: ${{ secrets.CF_TOKEN }}
+  CF_MAIL: ${{ secrets.CF_MAIL }}
+  AWS_GH_ACTION_ROLE: ${{ vars.TOOL_GH_ACTION_ROLE_ARN }}
+  DEV_AWS_CICD_ROLE: ${{ vars.DEV_CICD_ROLE_ARN }}
+  BETA_AWS_CICD_ROLE: ${{ vars.BETA_CICD_ROLE_ARN }}
+  PROD_AWS_CICD_ROLE: ${{ vars.PROD_CICD_ROLE_ARN }}
+  SLACK_WEBHOOK_URL: ${{ secrets.MONITORING_SLACK_URL }}
+  TERRAFORM_MODULES_SECRET_KEY: ${{ secrets.TERRAFORM_MODULES_SECRET_KEY }}
+permissions:
+  id-token: write # required to use OIDC authentication
+  contents: write # read is required for actions/checkout, write for create-release
+jobs:
+  get_stage:
+#    Run if the workflow run (CI) is successful or if the event is a push means it's a tag
+    if: ${{ (github.event.workflow_run.conclusion == 'success') || github.event_name == 'push' }}
+    outputs:
+      target_env: ${{ inputs.override_env || steps.get_current_stage.outputs.target_env }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: get_current_stage
+        if: ${{ inputs.override_env == '' }}
+        uses: pbstck/actions/get-stage@v1
+  plan:
+    needs: get_stage
+    runs-on: ubuntu-latest
+    env:
+      TARGET_ENV: ${{ needs.get_stage.outputs.target_env }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+      - uses: pbstck/actions/setup-terraform@v1
+      - uses: pbstck/actions/setup-cloud@v1
+      - name: Install Task
+        uses: pbstck/actions/setup-task@v1
+      - name: plan
+        run: task -y plan/${TARGET_ENV}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: terraform_plan
+          path: |
+            /tmp/*.plan
+      - uses: ravsamhq/notify-slack-action@v2
+        if: always()
+        with:
+          status: ${{ job.status }}
+          notification_title: "{workflow} has {status_message}"
+          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+          footer: "Linked Repo <{repo_url}|{repo}>"
+          notify_when: "failure"
+
+  deploy:
+    needs: [plan, get_stage]
+    environment: ${{ needs.get_stage.outputs.target_env }}
+    env:
+      TARGET_ENV: ${{ needs.get_stage.outputs.target_env }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+      - name: Authentify for artifactory
+        uses: pbstck/actions/setup-cloud@v1
+      - uses: pbstck/actions/setup-terraform@v1
+      - name: Install Task
+        uses: pbstck/actions/setup-task@v1
+      - name: Retrieve terraform plan
+        uses: actions/download-artifact@v4
+        id: download
+        with:
+          name: terraform_plan
+          path: /tmp
+      - name: deploy stack
+        run: task -y deploy/${TARGET_ENV}
+      - name: create release
+        if: ${{ env.TARGET_ENV != 'dev' }}
+        uses: pbstck/actions/create-release@v1
+        with:
+          parse_env: ${{ inputs.override_env && 'no' || 'yes' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: ravsamhq/notify-slack-action@v2
+        if: always()
+        with:
+          status: ${{ job.status }}
+          notification_title: "{workflow} has {status_message}"
+          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+          footer: "Linked Repo <{repo_url}|{repo}>"
+          notify_when: "failure"

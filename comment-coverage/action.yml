@@ -1,0 +1,18 @@
+name: Check coverage summary
+description: This action verifies the coverage summary provided, posting a comment in a readable format.
+inputs:
+  github-token:
+    description: 'GitHub API Access Token'
+    default: ${{ github.token }}
+    required: true
+  summaries:
+    description: 'One line per file that need to be analyzed in the form <title>@<key>@<file path>'
+    required: true
+  one-export:
+    description: 'Should export svg and json in one output as JSON'
+    required: false
+    default: 'no'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

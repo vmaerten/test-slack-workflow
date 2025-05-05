@@ -1,0 +1,21 @@
+{
+  "name": "comment-coverage-action",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "ncc build src/index.js -o dist --source-map --license licenses.txt"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pbstck/actions.git"
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.0",
+    "badgen": "^3.2.3",
+    "jsdom": "^25.0.1",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.38.3"
+  }
+}

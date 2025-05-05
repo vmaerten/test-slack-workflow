@@ -1,0 +1,13 @@
+name: Create a release
+description: Create a release with a release note containing the diff between the current tag and the latest
+inputs:
+  parse_env:
+    description: "If set to 'yes', parses the env inside the tag and gets the last tag with the same env."
+    required: false
+    default: "yes"
+outputs:
+  target_env:
+    description: The stage
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

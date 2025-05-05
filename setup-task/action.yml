@@ -1,0 +1,13 @@
+name: Setup Task
+description: Install Task
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v4
+      with:
+        path: .task/
+        key: ${{ runner.os }}-task
+    - uses: arduino/setup-task@v2
+      with:
+        repo-token: ${{ env.GITHUB_TOKEN }}
+        version: 3.39

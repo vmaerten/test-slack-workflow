@@ -1,0 +1,13 @@
+{
+  "name": "write",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "ncc build index.js -o dist --source-map --license licenses.txt"
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.38.3"
+  }
+}

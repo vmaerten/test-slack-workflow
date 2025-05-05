@@ -1,0 +1,21 @@
+name: Coverage
+description: Read coverage files, write comments and publish badges
+inputs:
+  summaries:
+    description: 'One line per file that need to be analyzed in the form <title>@<key>@<file path>'
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Download all workflow run artifacts
+      uses: actions/download-artifact@v4
+    - id: coverage
+      if: ${{ github.event_name == 'push' }}
+      uses: pbstck/actions/comment-coverage@v1
+      with:
+        summaries: ${{ inputs.summaries }}
+        one-export: 'yes'
+    - uses: pbstck/actions/publish-badges@v1
+      if: ${{ github.event.ref == 'refs/heads/main' && github.event_name == 'push' }}
+      with:
+        summaries: "[${{join(steps.coverage.outputs.*, ',')}}]"

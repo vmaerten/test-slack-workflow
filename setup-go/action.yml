@@ -1,0 +1,25 @@
+name: Setup Go with cache
+description: Install go with the desired version and cache go mod
+inputs:
+  go-version:
+    description: 'version'
+    required: false
+  private-pull:
+    description: "Allow private pull"
+    required: false
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - name: "Setup SSH Agent"
+      if: ${{ inputs.private-pull == 'true' }}
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: |
+          ${{ env.MODELS_SECRET_KEY }}
+    - name : Redirect Git HTTPS to SSH
+      shell: bash
+      run : git config --global url."git@github.com:".insteadOf "https://github.com/"
+    - uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version || env.GO_VERSION ||'1.19' }}

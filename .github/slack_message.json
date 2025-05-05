@@ -1,0 +1,27 @@
+{
+  "text": "New version of Actions (${{env.VERSION_NUMBER}}) is available",
+  "blocks": [
+    {
+      "type": "header",
+      "text": {
+        "type": "plain_text",
+        "emoji": true,
+        "text": ":rocket: New version of Actions (${{env.VERSION_NUMBER}}) is available"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "What's new ?"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": ${{ env.CHANGELOG}}
+      }
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+name: Continuous integration Javascript Lib
+on:
+  workflow_call:
+    inputs:
+      project:
+        required: true
+        type: string
+      coverage:
+        required: false
+        type: boolean
+        default: false
+      build:
+        required: false
+        type: boolean
+        default: true
+      node-version:
+        required: true
+        type: string
+      build-output-files:
+        type: string
+        required: false
+        description: 'One line per file that needs to be analyzed in the form <baseDir>@<regex> (regex is optional and shall match only one file)'
+      artifacts-path:
+        type: string
+        required: false
+        default: 'dist/*.js'
+      args-for-build:
+        type: string
+        required: false
+        description: 'args will be passed to task build'
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+env:
+  AWS_DEFAULT_REGION: "eu-west-1"
+  AWS_GH_ACTION_ROLE: ${{ vars.TOOL_GH_ACTION_ROLE_ARN }}
+  MODELS_SECRET_KEY: ${{ secrets.MODELS_SECRET_KEY }}
+permissions:
+  id-token: write # required to use OIDC authentication
+  contents: write # read is required for actions/checkout, write is required for pbstck/actions/coverage to be able to write comments on commits (on main)
+  pull-requests: write # write is required to let pbstck/actions/coverage write comments on PR
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Task
+        uses: pbstck/actions/setup-task@v1
+      - uses: pbstck/actions/setup-pnpm@v1
+        with:
+          node-version: ${{ inputs.node-version }}
+          working-directory: ${{ inputs.working-directory }}
+      - name: Test
+        run: |
+          if  ${{ inputs.coverage }} ; then
+            task -y ${{inputs.project}}:test/coverage
+          else
+            task -y ${{inputs.project}}:test
+          fi
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.coverage == true }}
+        with:
+          name: coverage_${{ inputs.project }}
+          path: './coverage/coverage-summary.json'
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Task
+        uses: pbstck/actions/setup-task@v1
+      - uses: pbstck/actions/setup-pnpm@v1
+        with:
+          node-version: ${{ inputs.node-version }}
+          working-directory: ${{ inputs.working-directory }}
+      - name: Lint
+        run: task -y ${{inputs.project}}:lint/check
+  build:
+    if: ${{ inputs.build == true }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Task
+        uses: pbstck/actions/setup-task@v1
+      - uses: pbstck/actions/setup-pnpm@v1
+        with:
+          node-version: ${{ inputs.node-version }}
+          working-directory: ${{ inputs.working-directory }}
+      - name: Build
+        run: task -y ${{inputs.project}}:build ${{ inputs.args-for-build }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary_${{ inputs.project }}
+          path: ${{ inputs.artifacts-path }}
+      - uses: pbstck/actions/build-output@v1
+        if: ${{ inputs.build-output-files }}
+        with:
+          files: ${{ inputs.build-output-files }}

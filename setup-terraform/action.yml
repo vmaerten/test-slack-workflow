@@ -1,0 +1,23 @@
+name: Setup terraform
+description: Install terraform with the desired version
+inputs:
+  terraform_version:
+    description: 'version'
+    required: false
+    default: '1.9.8'
+  terraform_wrapper:
+    description: 'Whether or not to install a wrapper to wrap subsequent calls of the `terraform` binary and expose its STDOUT, STDERR, and exit code as outputs named `stdout`, `stderr`, and `exitcode` respectively. Defaults to `false`.'
+    default: 'false'
+    required: false
+runs:
+  using: composite
+  steps:
+    - uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ inputs.terraform_version }}
+        terraform_wrapper: ${{ inputs.terraform_wrapper }}
+    - name: "Setup SSH Agent"
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: |
+          ${{ env.TERRAFORM_MODULES_SECRET_KEY }}

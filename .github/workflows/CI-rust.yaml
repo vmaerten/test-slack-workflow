@@ -1,0 +1,95 @@
+name: Continuous integration
+on:
+  workflow_call:
+    inputs:
+      project:
+        required: true
+        type: string
+      rust-version:
+        required: true
+        type: string
+      working-directory:
+        required: false
+        type: string
+        default: '.'
+      coverage:
+        required: false
+        type: boolean
+        default: false
+      build:
+        required: false
+        type: boolean
+        default: true
+env:
+  AWS_DEFAULT_REGION: "eu-west-1"
+  AWS_GH_ACTION_ROLE: ${{ vars.TOOL_GH_ACTION_ROLE_ARN }}
+  CICD_ARTIFACTORY_KEY: ${{ secrets.CICD_ARTIFACTORY_KEY }}
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+  MODELS_SECRET_KEY: ${{ secrets.MODELS_SECRET_KEY }}
+  AWS_LIB_SECRET_KEY: ${{ secrets.AWS_LIB_SECRET_KEY }}
+  MONGODB_TOOLING_SECRET_KEY: ${{ secrets.MONGODB_TOOLING_SECRET_KEY }}
+  RUST_VERSION: ${{ inputs.rust-version }}
+permissions:
+  id-token: write # required to use OIDC authentication
+  contents: write # read is required for actions/checkout, write is required for pbstck/actions/coverage to be able to write comments on commits (on main)
+  pull-requests: write # write is required to let pbstck/actions/coverage write comments on PR
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Task
+        uses: pbstck/actions/setup-task@v1
+      - name: Setup Rust
+        uses: pbstck/actions/setup-rust@v1
+        with:
+          working-directory: ${{ inputs.working-directory || '.' }}
+          key: ${{ inputs.project }}
+          private-pull: true
+      - name: Test
+        run: |
+          if ${{ inputs.coverage }}; then
+            task -y ${{inputs.project}}:test/coverage
+          else
+            task -y ${{inputs.project}}:test
+          fi
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.coverage == true }}
+        with:
+          name: coverage_${{ inputs.project }}
+          path: ${{inputs.working-directory}}/**/cobertura.xml
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Task
+        uses: pbstck/actions/setup-task@v1
+      - name: Setup Rust
+        uses: pbstck/actions/setup-rust@v1
+        with:
+          working-directory: ${{ inputs.working-directory || '.' }}
+          key: ${{ inputs.project }}
+          private-pull: true
+      - name: Lint
+        run: task -y ${{inputs.project}}:lint/check
+  build:
+    if: ${{ inputs.build == true }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Task
+        uses: pbstck/actions/setup-task@v1
+      - uses: pbstck/actions/setup-cloud@v1
+      - name: Setup Rust
+        uses: pbstck/actions/setup-rust@v1
+        with:
+          working-directory: ${{ inputs.working-directory || '.' }}
+          key: ${{ inputs.project }}
+          private-pull: true
+      - name: Build
+        run: task -y ${{inputs.project}}:build
+      - uses: actions/upload-artifact@v4
+        if: ${{ github.event.ref == 'refs/heads/main' }}
+        with:
+          name: binary_${{ inputs.project }}
+          path: bin/*.zip

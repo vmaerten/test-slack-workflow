@@ -1,0 +1,58 @@
+name: release
+
+
+run-name: Release ${{ github.event.inputs.major_version }} to ${{ github.event.inputs.version_number }} by ${{github.actor}}
+env:
+  SLACK_BOT_TOKEN: ${{ secrets.SLACK_DEPLOYMENT_BOT_TOKEN  }}
+on:
+  workflow_dispatch:
+    inputs:
+      version_number:
+        description: 'Release version number (v#.#.#)'
+        type: string
+        required: true
+      major_version:
+        type: choice
+        description: The major version to update
+        options:
+          - v1
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  release-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Git push release tag
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git tag ${{ inputs.version_number }}
+          git tag -f v1
+          git push origin v1 --force
+          git push origin ${{ inputs.version_number }}
+      - name: Get changelog
+        id: get_changelog
+        run: |
+          {
+            echo 'changelog<<EOF'
+            git --no-pager log --pretty="%h - %s (%an)"  $(git tag --sort version:refname | tail -n 2 | head -n 1)..$(git tag --sort version:refname | tail -n 1) | sed -E 's/\n/\\n/g'
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+      - name: Post to a Slack channel
+        id: slack
+        env:
+          VERSION_NUMBER: ${{github.event.inputs.version_number}}
+          CHANGELOG: ${{ toJSON(format('```{0}```',steps.get_changelog.outputs.changelog)) }}
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          channel-id: CHUC23F16
+          payload-file-path: ./.github/slack_message.json
+
