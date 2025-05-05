@@ -55,5 +55,6 @@ jobs:
         with:
           method: chat.postMessage
           token: ${{ env.SLACK_BOT_TOKEN }}
+          payload-templated: true
           payload-file-path: ./.github/slack_message.json
 
