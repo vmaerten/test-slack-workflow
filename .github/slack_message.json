@@ -1,5 +1,5 @@
 {
-  "channel": "CHUC23F16",
+  "channel": "C01F00NBV4P",
   "text": "New version of Actions (${{env.VERSION_NUMBER}}) is available",
   "blocks": [
     {
